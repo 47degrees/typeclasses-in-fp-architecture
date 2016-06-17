@@ -1,11 +1,10 @@
 import sbt.Keys._
 
 val scalaV = "2.11.7"
-val catsV = "0.6.0"
-val scalazV = "7.2.0"
-val raptureV = "2.0.+"
-val scalacheckV = "1.13.0"
 val simulacrumV = "0.7.0"
+val circeV = "0.4.1"
+
+ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
 
 scalacOptions ++= Seq(
   "-feature",
@@ -29,10 +28,11 @@ resolvers ++= Seq(
   ) 
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats" % catsV,
   "org.scala-lang" % "scala-compiler" % scalaV,
-  "org.scalacheck" %% "scalacheck" % scalacheckV,
-  "com.github.mpilquist" %% "simulacrum" % simulacrumV  
+  "com.github.mpilquist" %% "simulacrum" % simulacrumV,
+  "io.circe" %% "circe-core" % circeV,
+  "io.circe" %% "circe-generic" % circeV,
+  "io.circe" %% "circe-parser" % circeV
 )
 
 scalacOptions in (Compile, console) ++= Seq(

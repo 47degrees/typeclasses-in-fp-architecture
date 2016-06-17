@@ -247,7 +247,7 @@ case class REPLesent(
 
     private lazy val emojis: Map[String, String] = {
       Try {
-        val input = io.Source.fromFile("emoji.txt").getLines
+        val input = scala.io.Source.fromFile("emoji.txt").getLines
         input.map { l =>
           val a = l.split(' ')
           (a(1), a(0))
@@ -379,7 +379,7 @@ case class REPLesent(
 
   private def parseFile(file: String): IndexedSeq[Slide] = {
     Try {
-      val input = io.Source.fromFile(file).getLines
+      val input = scala.io.Source.fromFile(file).getLines
       parse(input)
     } getOrElse {
       Console.err.print(s"Sorry, could not parse file $file. Quick, say something funny before anyone notices!")

@@ -104,11 +104,13 @@ When a computation returns the same value
 each time is invoked 
 
 ```tut:silent
+import scala.util.Try
+
 def boom = throw new RuntimeException
 
-def strictEval(f : Any) = println { "Hello Strict World!" ; f }
+def strictEval(f : Any) = Try(f)
 
-def lazyEval(f : => Any) = println { "Hello Lazy World!" ; f }
+def lazyEval(f : => Any) = Try(f)
 ```
 
 ---
@@ -118,19 +120,26 @@ def lazyEval(f : => Any) = println { "Hello Lazy World!" ; f }
 Recursion is favored over iteration
 
 ```tut:silent
-def reduceRecursive(list : List[Int]) : Int = {
-	def loop(currentList : List[Int], acc : Int) = currentList match {
-		case Nil => acc
-		case head :: tail => loop(tail, head + acc)
-	}
-}
-
 def reduceIterative(list : List[Int]) : Int = {
 	var acc = 0
 	for (i <- list) 
 		acc = acc + i
 	acc
 }
+```
+
+---
+
+## Recursion ##
+
+Recursion is favored over iteration
+
+```tut:silent
+def reduceRecursive(list : List[Int], acc : Int = 0) : Int = 
+	list match {
+		case Nil => acc
+		case head :: tail => loop(tail, head + acc)
+	}
 ```
 
 ---
@@ -159,7 +168,6 @@ We will learn typeclasses by example...
 
 [ ] **Monoid**
 [ ] **Functor**
-[ ] **Cartesian**
 
 ---
 
@@ -167,7 +175,6 @@ We will learn typeclasses by example...
 
 [ ] **Monoid** : Combine values of the same type
 [ ] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
 
 ---
 
@@ -216,17 +223,6 @@ implicit val IntAddMonoid = new Monoid[Int] {
 implicit val StringConcatMonoid = new Monoid[String] {
 	def combine(x : String, y : String) : String = x + y
 	def empty = ""
-}
-```
-
----
-
-## Monoid ##
-
-```tut:silent
-implicit def TupleMonoid[A : Monoid] = new Monoid[(A, A)] {
-	def combine(x : (A, A), y : (A, A)) : (A, A) = Monoid[A].combine() 
-	def empty = (Monoid[A].empty, Monoid[A].empty)
 }
 ```
 
@@ -340,59 +336,6 @@ uberMap(List(1, 2, 3))(x => x * 2)
 
 [x] **Monoid** : Combine values of the same type
 [x] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```tut:silent
-@typeclass trait Cartesian[F[_]] {
-  @op("|@|") def product[A, B](fa: F[A], fb: F[B]): F[(A, B)]
-}
-```
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```tut:silent
-implicit def FutureCartesian = new Cartesian[Future] {
-	def product[A, B](fa: Future[A], fb: Future[B]): Future[(A, B)] = 
-		fa zip fb
-}
-```
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```tut:silent
-implicit def ListCartesian = new Cartesian[List] {
-	def product[A, B](fa: List[A], fb: List[B]): List[(A, B)] = 
-		fa zip fb
-}
-```
-
----
-
-## Cartesian ##
-
-We can code to abstractions instead of coding to concrete
-types.
-
-```tut:silent
-def allProducts[F[_] : Cartesian, A, B](fa : F[A], fb : F[B]) : F[(A, B)] =
-	Cartesian[F].product(fa, fb)
-
-allProducts(List(1, 2, 3), List(4, 5, 6))
-```
 
 ---
 
@@ -400,16 +343,72 @@ allProducts(List(1, 2, 3), List(4, 5, 6))
 
 [x] **Monoid** : Combine values of the same type
 [x] **Functor** : Transform values inside contexts
-[x] **Cartesian** : Compose independent computations 
 
 ---
 
 ## Typeclasses ##
 
-Can we combine multiple abstractions and
-behaviors?
+Can we combine multiple
+abstractions & behaviors?
 
 ---
+
+## Typeclasses ##
+
+Yes we can! Let's do a real world example
+
+```tut:silent
+import cats.data.Xor
+import io.circe._, io.circe.generic.auto._, io.circe.parser._
+import scala.io.Source
+
+case class CodeInfo(total_count : Int)
+
+def searchGithub(query : String) : Int = {
+	val json = Source.fromURL(s"https://api.github.com/search/code?q=$query").mkString
+	val codeInfo = decode[CodeInfo](json)
+	codeInfo.map(_.total_count).valueOr(error => 0)
+}
+//searchGithub("null+in:file+user:pedrovgs")
+```
+
+---
+
+## Typeclasses ##
+
+Yes we can! Let's do a real world example
+
+---
+
+## Typeclasses ##
+
+```tut:silent
+
+import cats.{Foldable, Applicative}, cats.syntax.traverse._, cats.std.all._
+
+def reduceOps[F[_] : Applicative : Functor, A : Monoid](ops : List[F[A]]) : F[A] = {
+	val op : F[List[A]] = ops.sequence
+	val reduced : F[A] = Functor[F].map(op) { list => 
+		Foldable[List].foldLeft(list, Monoid[A].empty) { (acc, a) =>
+			Monoid[A].combine(acc, a)
+		}
+	}
+	reduced
+}
+
+```
+
+
+val searches = List("raulraja", "dialelo", "pedrovgs") map (user => s"null+in:file+user:$user")
+
+reduceOps(searches map { query => Future(searchGithub(query)) })
+
+reduceOps(List(Option("Software"), Option("Craftsmanship"), Option("Pamplona-Iruñea")))
+
+```
+
+---
+
 
 ## Typeclasses ##
 
@@ -421,7 +420,6 @@ Yes we can!
 ---
 
 ## Recap ##
-
 
 ---
 
