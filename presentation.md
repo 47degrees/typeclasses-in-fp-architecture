@@ -5,10 +5,13 @@ build-lists: true
 
 # A Tour of Functional Typeclasses #
 
-A brief introduction to some basic typeclasses ilustrating
+An introduction to FP & typeclasses ilustrating
 the power of coding to abstractions
 
-[@raulraja](https://twitter.com/raulraja) CTO [@47deg](https://twitter.com/47deg)
+[@raulraja](https://twitter.com/raulraja)
+[@47deg](https://twitter.com/47deg)
+[Interactive](http://github.com/47deg/typeclasses-tour)
+[Presentation](https://speakerdeck.com/raulraja/typeclasses-tour)
 
 ---
 
@@ -30,12 +33,12 @@ Typeclasses & Data Structures
 
 ## What is Functional Programming ##
 
-> In computer science, functional programming 
-> is a programming paradigm. 
+> In computer science, functional programming
+> is a programming paradigm.
 
-> A style of building the structure and elements 
-> of computer programs that treats computation 
-> as the evaluation of mathematical functions 
+> A style of building the structure and elements
+> of computer programs that treats computation
+> as the evaluation of mathematical functions
 > and avoids changing-state and mutable data.
 
 -- Wikipedia
@@ -55,13 +58,13 @@ Typeclasses & Data Structures
 
 ### Higher Order Functions ##
 
-When a functions takes another function as argument 
+When a functions takes another function as argument
 or returns a function as return type:
 
 ```scala
 def transform[B](list : List[Int])(transformation : Int => B) =
 	list map transformation
-	
+
 transform(List(1, 2, 4))(x => x * 10)
 ```
 
@@ -83,7 +86,7 @@ case class Conference(name : String)
 When a computation returns the same value
 each time is invoked
 
-Transparent : 
+Transparent :
 
 ```scala
 def pureAdd(x : Int, y : Int) = x + y
@@ -100,17 +103,17 @@ def impureAdd(y : Int) = x + y
 
 ## Lazy Evaluation ##
 
-When a computation returns the same value
-each time is invoked 
+When a computation is evaluated
+only if needed
 
 ```scala
 import scala.util.Try
 
 def boom = throw new RuntimeException
 
-def strictEval(f : Any) = println { "Hello Strict World!" ; Try(f) }
+def strictEval(f : Any) = Try(f)
 
-def lazyEval(f : => Any) = println { "Hello Lazy World!" ; Try(f) }
+def lazyEval(f : => Any) = Try(f)
 ```
 
 ---
@@ -120,28 +123,33 @@ def lazyEval(f : => Any) = println { "Hello Lazy World!" ; Try(f) }
 Recursion is favored over iteration
 
 ```scala
-def reduceRecursive(list : List[Int]) : Int = {
-	def loop(currentList : List[Int], acc : Int) : Int = currentList match {
-		case Nil => acc
-		case head :: tail => loop(tail, head + acc)
-	}
-	loop(list, 0)
-}
-
 def reduceIterative(list : List[Int]) : Int = {
 	var acc = 0
-	for (i <- list) 
-		acc = acc + i
+	for (i <- list) acc = acc + i
 	acc
 }
 ```
 
 ---
 
+## Recursion ##
+
+Recursion is favored over iteration
+
+```scala
+def reduceRecursive(list : List[Int], acc : Int = 0) : Int =
+	list match {
+		case Nil => acc
+		case head :: tail => reduceRecursive(tail, head + acc)
+	}
+```
+
+---
+
 ## Abstractions ##
 
-> Each significant piece of functionality in a program 
-> should be implemented in just one place in the source code. 	
+> Each significant piece of functionality in a program
+> should be implemented in just one place in the source code.
 
 -- Benjamin C. Pierce in Types and Programming Languages (2002)
 
@@ -160,23 +168,14 @@ We will learn typeclasses by example...
 
 ## Typeclasses ##
 
-[ ] **Monoid**
-[ ] **Functor**
-[ ] **Cartesian**
-
----
-
-## Typeclasses ##
-
 [ ] **Monoid** : Combine values of the same type
 [ ] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
 
 ---
 
 ## Monoid ##
 
-A `Monoid` expresses the ability of a value of a 
+A `Monoid` expresses the ability of a value of a
 type to `combine` itself with other values of the same type
 in addition it provides an `empty` value.
 
@@ -255,7 +254,6 @@ uberCombine(10, 10)
 
 [x] **Monoid** : Combine values of the same type
 [ ] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
 
 ---
 
@@ -304,7 +302,8 @@ Most containers transformations can be expressed as
 Functors.
 
 ```scala
-import scala.concurrent.Future
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 implicit def FutureFunctor = new Functor[Future] {
@@ -332,74 +331,13 @@ uberMap(List(1, 2, 3))(x => x * 2)
 
 [x] **Monoid** : Combine values of the same type
 [x] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```scala
-@typeclass trait Cartesian[F[_]] {
-  @op("|@|") def product[A, B](fa: F[A], fb: F[B]): F[(A, B)]
-}
-```
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```scala
-implicit def FutureCartesian = new Cartesian[Future] {
-	def product[A, B](fa: Future[A], fb: Future[B]): Future[(A, B)] = 
-		fa zip fb
-}
-```
-
----
-
-## Cartesian ##
-
-`Cartesian` captures the idea of composing independent effectful values
-
-```scala
-implicit def ListCartesian = new Cartesian[List] {
-	def product[A, B](fa: List[A], fb: List[B]): List[(A, B)] = 
-		fa zip fb
-}
-```
-
----
-
-## Cartesian ##
-
-We can code to abstractions instead of coding to concrete
-types.
-
-```scala
-def allProducts[F[_] : Cartesian, A, B](fa : F[A], fb : F[B]) : F[(A, B)] =
-	Cartesian[F].product(fa, fb)
-
-allProducts(List(1, 2, 3), List(4, 5, 6))
-```
 
 ---
 
 ## Typeclasses ##
 
-[x] **Monoid** : Combine values of the same type
-[x] **Functor** : Transform values inside contexts
-[x] **Cartesian** : Compose independent computations 
-
----
-
-## Typeclasses ##
-
-Can we combine multiple abstractions and
-behaviors?
+Can we combine multiple
+abstractions & behaviors?
 
 ---
 
@@ -415,60 +353,80 @@ import scala.io.Source
 case class CodeInfo(total_count : Int)
 
 def searchGithub(query : String) : Int = {
+	println("Searching github in " + Thread.currentThread.getName)
 	val json = Source.fromURL(s"https://api.github.com/search/code?q=$query").mkString
 	val codeInfo = decode[CodeInfo](json)
 	codeInfo.map(_.total_count).valueOr(error => 0)
 }
-//searchGithub("null+in:file+user:pedrovgs")
+
+def sample = searchGithub("null+in:file+user:pedrovgs")
 ```
 
 ---
 
 ## Typeclasses ##
 
-Yes we can! Let's do a real world example
-
 ```scala
-
-import cats.{Foldable, Applicative}, cats.syntax.traverse._, cats.std.all._
+import cats.{Foldable, Applicative, Traverse}
+import cats.syntax.traverse._
+import cats.std.all._
 
 def reduceOps[F[_] : Applicative : Functor, A : Monoid](ops : List[F[A]]) : F[A] = {
 	val op : F[List[A]] = ops.sequence
-	val reduced : F[A] = Functor[F].map(op) { list => 
+	val reduced : F[A] = Functor[F].map(op) { list =>
 		Foldable[List].foldLeft(list, Monoid[A].empty) { (acc, a) =>
 			Monoid[A].combine(acc, a)
 		}
 	}
 	reduced
 }
-
-val searches = List("raulraja", "dialelo", "pedrovgs") map (user => s"null+in:file+user:$user")
-
-reduceOps(searches map { query => Future(searchGithub(query)) })
-
-reduceOps(List(Option("Software"), Option("Craftsmanship"), Option("Pamplona-Iruñea")))
-
 ```
 
 ---
+## Typeclasses ##
 
+```scala
+def reduceOps[
+	G[_] : Traverse : Foldable,
+	F[_] : Applicative : Functor,
+	A : cats.Monoid]
+	(ops : G[F[A]]) : F[A] =
+		Functor[F].map(ops.sequence)(Foldable[G].fold(_))
+```
+
+---
 
 ## Typeclasses ##
 
-Yes we can!
-
 ```scala
+
+val searches = List("raulraja", "dialelo", "pedrovgs") map {
+	user => s"null+in:file+user:$user"
+}
+
+def op1 =
+	reduceOps(searches map { query => Future(searchGithub(query)) })
+
+def op2 =
+	reduceOps(
+		Option("Software") ::
+		Option("Craftsmanship") ::
+		Option("Pamplona-Iruñea") :: Nil)
+
 ```
 
 ---
 
 ## Recap ##
 
+Don't settle for a programming language
+that does not support FP.
+
 ---
 
 ## Recap ##
 
-Don't settle for a programming language that does not support FP
+Higher Kinded Types matter!
 
 ---
 
@@ -482,8 +440,7 @@ Don't settle for a programming language that does not support FP
 
 @raulraja
 @47deg
-http://github.com/47deg/typeclass-tour
-https://speakerdeck.com/raulraja/typeclass-tour
+http://github.com/47deg/typeclasses-tour
+https://speakerdeck.com/raulraja/typeclasses-tour
 
 ---
-

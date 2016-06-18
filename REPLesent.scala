@@ -51,7 +51,7 @@ case class REPLesent(
         val screenWidth = Seq(width, w) find { _ > 0 } getOrElse defaultWidth
         val screenHeight = Seq(height, h) find { _ > 0 } getOrElse defaultHeight
 
-        (screenWidth, screenHeight)
+       (screenWidth, screenHeight)
       }
     }
 
@@ -200,7 +200,7 @@ case class REPLesent(
       case s if (s startsWith "#") && (s endsWith "#")=> ("\\*" + s.replaceAll("#", "")  + "\\*", Centered)
       case s if s.matches("(.*\\*\\*.*?\\*\\*.*)") => (s.replaceAll("\\*\\*", "\\\\*"), LeftAligned)
       case s if s startsWith "- " => (s, LeftAligned)
-      case s: String => (s, Centered)
+      case s: String => (s, LeftAligned)
     }
 
     private val ansiEscape = """\\.""".r

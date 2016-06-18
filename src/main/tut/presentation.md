@@ -5,10 +5,13 @@ build-lists: true
 
 # A Tour of Functional Typeclasses #
 
-A brief introduction to some basic typeclasses ilustrating
+An introduction to FP & typeclasses ilustrating
 the power of coding to abstractions
 
-[@raulraja](https://twitter.com/raulraja) CTO [@47deg](https://twitter.com/47deg)
+[@raulraja](https://twitter.com/raulraja)
+[@47deg](https://twitter.com/47deg)
+[Interactive](http://github.com/47deg/typeclasses-tour)
+[Presentation](https://speakerdeck.com/raulraja/typeclasses-tour)
 
 ---
 
@@ -30,12 +33,12 @@ Typeclasses & Data Structures
 
 ## What is Functional Programming ##
 
-> In computer science, functional programming 
-> is a programming paradigm. 
+> In computer science, functional programming
+> is a programming paradigm.
 
-> A style of building the structure and elements 
-> of computer programs that treats computation 
-> as the evaluation of mathematical functions 
+> A style of building the structure and elements
+> of computer programs that treats computation
+> as the evaluation of mathematical functions
 > and avoids changing-state and mutable data.
 
 -- Wikipedia
@@ -55,13 +58,13 @@ Typeclasses & Data Structures
 
 ### Higher Order Functions ##
 
-When a functions takes another function as argument 
+When a functions takes another function as argument
 or returns a function as return type:
 
 ```tut:silent
 def transform[B](list : List[Int])(transformation : Int => B) =
 	list map transformation
-	
+
 transform(List(1, 2, 4))(x => x * 10)
 ```
 
@@ -83,7 +86,7 @@ case class Conference(name : String)
 When a computation returns the same value
 each time is invoked
 
-Transparent : 
+Transparent :
 
 ```tut:silent
 def pureAdd(x : Int, y : Int) = x + y
@@ -100,8 +103,8 @@ def impureAdd(y : Int) = x + y
 
 ## Lazy Evaluation ##
 
-When a computation returns the same value
-each time is invoked 
+When a computation is evaluated
+only if needed
 
 ```tut:silent
 import scala.util.Try
@@ -122,8 +125,7 @@ Recursion is favored over iteration
 ```tut:silent
 def reduceIterative(list : List[Int]) : Int = {
 	var acc = 0
-	for (i <- list) 
-		acc = acc + i
+	for (i <- list) acc = acc + i
 	acc
 }
 ```
@@ -135,10 +137,10 @@ def reduceIterative(list : List[Int]) : Int = {
 Recursion is favored over iteration
 
 ```tut:silent
-def reduceRecursive(list : List[Int], acc : Int = 0) : Int = 
+def reduceRecursive(list : List[Int], acc : Int = 0) : Int =
 	list match {
 		case Nil => acc
-		case head :: tail => loop(tail, head + acc)
+		case head :: tail => reduceRecursive(tail, head + acc)
 	}
 ```
 
@@ -146,8 +148,8 @@ def reduceRecursive(list : List[Int], acc : Int = 0) : Int =
 
 ## Abstractions ##
 
-> Each significant piece of functionality in a program 
-> should be implemented in just one place in the source code. 	
+> Each significant piece of functionality in a program
+> should be implemented in just one place in the source code.
 
 -- Benjamin C. Pierce in Types and Programming Languages (2002)
 
@@ -166,13 +168,6 @@ We will learn typeclasses by example...
 
 ## Typeclasses ##
 
-[ ] **Monoid**
-[ ] **Functor**
-
----
-
-## Typeclasses ##
-
 [ ] **Monoid** : Combine values of the same type
 [ ] **Functor** : Transform values inside contexts
 
@@ -180,7 +175,7 @@ We will learn typeclasses by example...
 
 ## Monoid ##
 
-A `Monoid` expresses the ability of a value of a 
+A `Monoid` expresses the ability of a value of a
 type to `combine` itself with other values of the same type
 in addition it provides an `empty` value.
 
@@ -259,7 +254,6 @@ uberCombine(10, 10)
 
 [x] **Monoid** : Combine values of the same type
 [ ] **Functor** : Transform values inside contexts
-[ ] **Cartesian** : Compose independent computations 
 
 ---
 
@@ -308,7 +302,8 @@ Most containers transformations can be expressed as
 Functors.
 
 ```tut:silent
-import scala.concurrent.Future
+import scala.concurrent.{Future, Await}
+import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 implicit def FutureFunctor = new Functor[Future] {
@@ -341,13 +336,6 @@ uberMap(List(1, 2, 3))(x => x * 2)
 
 ## Typeclasses ##
 
-[x] **Monoid** : Combine values of the same type
-[x] **Functor** : Transform values inside contexts
-
----
-
-## Typeclasses ##
-
 Can we combine multiple
 abstractions & behaviors?
 
@@ -365,67 +353,80 @@ import scala.io.Source
 case class CodeInfo(total_count : Int)
 
 def searchGithub(query : String) : Int = {
+	println("Searching github in " + Thread.currentThread.getName)
 	val json = Source.fromURL(s"https://api.github.com/search/code?q=$query").mkString
 	val codeInfo = decode[CodeInfo](json)
 	codeInfo.map(_.total_count).valueOr(error => 0)
 }
-//searchGithub("null+in:file+user:pedrovgs")
+
+def sample = searchGithub("null+in:file+user:pedrovgs")
 ```
 
 ---
 
 ## Typeclasses ##
 
-Yes we can! Let's do a real world example
-
----
-
-## Typeclasses ##
-
 ```tut:silent
-
-import cats.{Foldable, Applicative}, cats.syntax.traverse._, cats.std.all._
+import cats.{Foldable, Applicative, Traverse}
+import cats.syntax.traverse._
+import cats.std.all._
 
 def reduceOps[F[_] : Applicative : Functor, A : Monoid](ops : List[F[A]]) : F[A] = {
 	val op : F[List[A]] = ops.sequence
-	val reduced : F[A] = Functor[F].map(op) { list => 
+	val reduced : F[A] = Functor[F].map(op) { list =>
 		Foldable[List].foldLeft(list, Monoid[A].empty) { (acc, a) =>
 			Monoid[A].combine(acc, a)
 		}
 	}
 	reduced
 }
-
-```
-
-
-val searches = List("raulraja", "dialelo", "pedrovgs") map (user => s"null+in:file+user:$user")
-
-reduceOps(searches map { query => Future(searchGithub(query)) })
-
-reduceOps(List(Option("Software"), Option("Craftsmanship"), Option("Pamplona-Iruñea")))
-
 ```
 
 ---
+## Typeclasses ##
 
+```tut:silent
+def reduceOps[
+	G[_] : Traverse : Foldable,
+	F[_] : Applicative : Functor,
+	A : cats.Monoid]
+	(ops : G[F[A]]) : F[A] =
+		Functor[F].map(ops.sequence)(Foldable[G].fold(_))
+```
+
+---
 
 ## Typeclasses ##
 
-Yes we can!
-
 ```tut:silent
+
+val searches = List("raulraja", "dialelo", "pedrovgs") map {
+	user => s"null+in:file+user:$user"
+}
+
+def op1 =
+	reduceOps(searches map { query => Future(searchGithub(query)) })
+
+def op2 =
+	reduceOps(
+		Option("Software") ::
+		Option("Craftsmanship") ::
+		Option("Pamplona-Iruñea") :: Nil)
+
 ```
 
 ---
 
 ## Recap ##
 
+Don't settle for a programming language
+that does not support FP.
+
 ---
 
 ## Recap ##
 
-Don't settle for a programming language that does not support FP
+Higher Kinded Types matter!
 
 ---
 
@@ -439,8 +440,7 @@ Don't settle for a programming language that does not support FP
 
 @raulraja
 @47deg
-http://github.com/47deg/typeclass-tour
-https://speakerdeck.com/raulraja/typeclass-tour
+http://github.com/47deg/typeclasses-tour
+https://speakerdeck.com/raulraja/typeclasses-tour
 
 ---
-

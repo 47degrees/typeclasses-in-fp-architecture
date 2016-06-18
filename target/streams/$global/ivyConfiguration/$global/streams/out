@@ -1,0 +1,1 @@
+[0m[[33mwarn[0m] [0mMultiple resolvers having different access mechanism configured with same name 'typesafe-releases'. To avoid conflict, Remove duplicate project resolvers (`resolvers`) or rename publishing resolver (`publishTo`).[0m
