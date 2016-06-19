@@ -58,7 +58,7 @@ Typeclasses & Data Structures
 
 ### Higher Order Functions ##
 
-When a functions takes another function as argument
+When a function takes another function as argument
 or returns a function as return type:
 
 ```tut:silent
@@ -70,10 +70,10 @@ transform(List(1, 2, 4))(x => x * 10)
 
 ---
 
-## Inmutable data ##
+## Immutable data ##
 
-Once a value is instantitated it can't be mutated in place.
-How can we change it's content then?
+Once a value is instantiated it can't be mutated in place.
+How can we change its content then?
 
 ```tut:silent
 case class Conference(name : String)
