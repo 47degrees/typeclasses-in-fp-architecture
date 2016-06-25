@@ -1,5 +1,5 @@
-# A Tour of Functional Programming Typeclasses & Data structures #
-(A tour about the most commonly used Functional Typeclasses and Data Structures)
+# Intro to FP & Typeclasses #
+A brief introduction to the core Functional Programming traits and the power of coding to abstractions using Typeclasses.
 
 **Download the presentation**
 
