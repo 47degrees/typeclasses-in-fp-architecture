@@ -1,7 +1,3 @@
-import cats.free._
-import cats.implicits._
-import cats._
-
 val replesent = REPLesent(input="presentation.md", intp=$intp)
 import replesent._
 f

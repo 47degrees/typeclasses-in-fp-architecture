@@ -1,10 +1,9 @@
 import sbt.Keys._
 
-val scalaV = "2.11.7"
-val simulacrumV = "0.7.0"
-val circeV = "0.4.1"
-
-ivyScala := ivyScala.value map { _.copy(overrideScalaVersion = true) }
+val scalaV = "2.12.4"
+val simulacrumV = "0.12.0"
+val catsV = "1.0.1"
+val textRazorV = "1.0.11"
 
 scalacOptions ++= Seq(
   "-feature",
@@ -30,17 +29,16 @@ resolvers ++= Seq(
 libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % scalaV,
   "com.github.mpilquist" %% "simulacrum" % simulacrumV,
-  "io.circe" %% "circe-core" % circeV,
-  "io.circe" %% "circe-generic" % circeV,
-  "io.circe" %% "circe-parser" % circeV
+  "org.typelevel" %% "cats-core" % catsV,
+  "com.textrazor" % "textrazor" % textRazorV
 )
 
 scalacOptions in (Compile, console) ++= Seq(
   "-i", "myrepl.init"
 )
 
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
 
-tutSettings
+enablePlugins(TutPlugin)
 
 tutTargetDirectory := file(".")

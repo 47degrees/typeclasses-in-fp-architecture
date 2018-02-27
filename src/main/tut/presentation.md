@@ -66,13 +66,14 @@ def transform[B](list : List[Int])(transformation : Int => B) =
 	list map transformation
 
 transform(List(1, 2, 4))(x => x * 10)
+
 ```
 
 ---
 
 ## Inmutable data ##
 
-Once a value is instantitated it can't be mutated in place.
+Once a value is instantiated it can't be mutated in place.
 How can we change it's content then?
 
 ```tut:silent
@@ -96,7 +97,7 @@ Opaque :
 
 ```tut:silent
 var x = 0
-def impureAdd(y : Int) = x + y
+def impureAdd(y : Int) = x += y; x
 ```
 
 ---
@@ -344,95 +345,6 @@ abstractions & behaviors?
 ## Typeclasses ##
 
 Yes we can! Let's do a real world example
-
-```tut:silent
-import cats.data.Xor
-import io.circe._, io.circe.generic.auto._, io.circe.parser._
-import scala.io.Source
-
-case class CodeInfo(total_count : Int)
-
-def searchGithub(query : String) : Int = {
-	println("Searching github in " + Thread.currentThread.getName)
-	val json = Source.fromURL(s"https://api.github.com/search/code?q=$query").mkString
-	val codeInfo = decode[CodeInfo](json)
-	codeInfo.map(_.total_count).valueOr(error => 0)
-}
-
-def sample = searchGithub("null+in:file+user:pedrovgs")
-```
-
----
-
-## Typeclasses ##
-
-```tut:silent
-import cats.{Foldable, Applicative, Traverse}
-import cats.syntax.traverse._
-import cats.std.all._
-
-def reduceOps[F[_] : Applicative : Functor, A : Monoid](ops : List[F[A]]) : F[A] = {
-	val op : F[List[A]] = ops.sequence
-	val reduced : F[A] = Functor[F].map(op) { list =>
-		Foldable[List].foldLeft(list, Monoid[A].empty) { (acc, a) =>
-			Monoid[A].combine(acc, a)
-		}
-	}
-	reduced
-}
-```
-
----
-## Typeclasses ##
-
-```tut:silent
-def reduceOps[
-	G[_] : Traverse : Foldable,
-	F[_] : Applicative : Functor,
-	A : cats.Monoid]
-	(ops : G[F[A]]) : F[A] =
-		Functor[F].map(ops.sequence)(Foldable[G].fold(_))
-```
-
----
-
-## Typeclasses ##
-
-```tut:silent
-
-val searches = List("raulraja", "dialelo", "pedrovgs") map {
-	user => s"null+in:file+user:$user"
-}
-
-def op1 =
-	reduceOps(searches map { query => Future(searchGithub(query)) })
-
-def op2 =
-	reduceOps(
-		Option("Software") ::
-		Option("Craftsmanship") ::
-		Option("Pamplona-Iruñea") :: Nil)
-
-```
-
----
-
-## Recap ##
-
-Don't settle for a programming language
-that does not support FP.
-
----
-
-## Recap ##
-
-Higher Kinded Types matter!
-
----
-
-## What's next? ##
-
-[Scala Exercises!](https://scala-exercises.org)
 
 ---
 
