@@ -342,9 +342,225 @@ abstractions & behaviors?
 
 ---
 
-## Typeclasses ##
+# What are our application layers?
 
-Yes we can! Let's do a real world example
+Presentation
+
+```scala
+import simulacrum._
+@typeclass trait Presentation[F[_]] {
+  def onUserRequestedTags(text: String): F[Unit]
+}
+```
+
+---
+
+# What are our application layers?
+
+Use Case
+
+```scala
+case class Tag(value: String)
+case class TaggedParagraph(text: String, tags: List[Tag])
+
+@typeclass trait FetchTagsUseCase[F[_]] {
+  def fetchTagsInText(text: String): F[TaggedParagraph]
+}
+```
+
+---
+
+# What are our application layers?
+
+Services
+
+```scala
+case class AnalysisRequest(text: String)
+
+@typeclass trait TagService[F[_]] {
+  def tag(request: AnalysisRequest): F[List[Tag]]
+}
+```
+
+---
+
+# What are our application layers?
+
+Data Source
+
+```scala
+case class Category(value: String)
+case class Entity(value: String)
+case class Topic(value: String)
+case class AnalysisResponse(
+  categories: List[Category],
+  entities: List[Entity],
+  topics: List[Topic]
+)
+
+@typeclass trait NlpDataSource[F[_]] {
+  def analyze(text: String): F[AnalysisResponse]
+}
+```
+
+---
+
+# What are our application layers?
+
+Configuration
+
+```scala
+case class NlpApiKey(value: String)
+
+@typeclass trait Config[F[_]] {
+  def nlpApiKey: F[NlpApiKey]
+}
+```
+
+---
+
+# Implementation
+
+Presentation
+
+```scala
+import cats._
+import cats.implicits._
+
+class ConsolePresentation[F[_]: Functor: FetchTagsUseCase] extends Presentation[F] {
+    def onUserRequestedTags(text: String): F[Unit] =
+      FetchTagsUseCase[F].fetchTagsInText(text).map { paragraph =>
+        println(paragraph.tags.mkString(", "))
+      }
+}
+```
+
+---
+
+# Implementation?
+
+Use case
+
+```scala
+class DefaultFetchTagsUseCase[F[_]: Functor: TagService] extends FetchTagsUseCase[F] {
+    def fetchTagsInText(text: String): F[TaggedParagraph] =
+      TagService[F].tag(AnalysisRequest(text)).map { tags =>
+        TaggedParagraph(text, tags)
+      }
+}
+```
+
+---
+
+# Implementation?
+
+Tag Service
+
+```scala
+class DefaultTagService[F[_]: Functor: NlpDataSource] extends TagService[F] {
+  def tag(request: AnalysisRequest): F[List[Tag]] =
+    NlpDataSource[F].analyze(request.text).map { response =>
+      (response.categories, response.entities, response.topics).mapN { case (category, entity, topic) =>
+        List(Tag(category.value), Tag(entity.value), Tag(topic.value))
+      }.flatten.distinct
+    }
+}
+```
+
+---
+
+# Implementation?
+
+Config
+
+```scala
+class SystemEnvConfig[F[_]](implicit AE: ApplicativeError[F, Throwable]) extends Config[F] {
+  val key = System.getenv("NLP_API_KEY")
+  def nlpApiKey: F[NlpApiKey] =
+    if (key == null || key == "") AE.raiseError(new IllegalStateException("Missing nlp api key"))
+    else AE.pure(NlpApiKey(key))
+}
+```
+
+---
+
+# Implementation?
+
+Data Source
+
+```scala
+import collection.JavaConverters._
+import scala.concurrent._
+import java.util.Arrays
+import com.textrazor.TextRazor
+
+class TextRazorNlpDataSource[F[_]: Config](implicit errorHandler: MonadError[F, Throwable]) extends NlpDataSource[F] {
+
+    private def client(apiKey: NlpApiKey) : TextRazor = {
+       val client = new TextRazor(apiKey.value)
+       client.addExtractor("entities")
+       client.addExtractor("topics")
+       client.setClassifiers(Arrays.asList("textrazor_newscodes"))
+       client
+    }
+
+    def analyze(text: String): F[AnalysisResponse] =
+      for {
+        apiKey <- Config[F].nlpApiKey
+        response <- errorHandler.catchNonFatal {
+           val txtRazorRes = blocking { client(apiKey).analyze(text).getResponse }
+           AnalysisResponse(
+             txtRazorRes.getCategories.asScala.toList.map { c => Category(c.getLabel) },
+             txtRazorRes.getEntities.asScala.toList.map { e => Entity(e.getEntityId) },
+             txtRazorRes.getTopics.asScala.toList.map { t => Topic(t.getLabel) }
+           )
+        }
+      } yield response
+}
+```
+
+---
+
+# Implementation?
+
+Runtime Module
+
+```scala
+object runtime {
+  implicit def presentation[F[_]: Functor: FetchTagsUseCase]: Presentation[F] =
+    new ConsolePresentation
+  implicit def useCase[F[_]: Functor: TagService] : FetchTagsUseCase[F] =
+    new DefaultFetchTagsUseCase
+  implicit def tagService[F[_]: Functor: NlpDataSource] : TagService[F] =
+    new DefaultTagService
+  implicit def dataSource[F[_]: Config]
+    (implicit ME: MonadError[F, Throwable]) : NlpDataSource[F] =
+      new TextRazorNlpDataSource
+  implicit def config[F[_]](implicit A: ApplicativeError[F, Throwable]): Config[F] =
+    new SystemEnvConfig
+}
+```
+
+---
+
+# Implementation?
+
+Application
+
+```scala
+import runtime._
+
+val text =
+    """|
+       | And now here is my secret, a very simple secret:
+       | It is only with the heart that one can see rightly;
+       | what is essential is invisible to the eye.
+       | ― Antoine de Saint-Exupéry, The Little Prince
+       """.stripMargin
+
+import scala.util.Try
+Presentation[Try].onUserRequestedTags(text)
+```
 
 ---
 
