@@ -1,33 +1,17 @@
 autoscale: true
 build-lists: true
-
----
+slidenumbers: true
+footer: @raulraja @47deg
 
 # A Tour of Functional Typeclasses #
 
 An introduction to FP & typeclasses ilustrating
-the power of coding to abstractions
+the power of coding to abstractions and Tagless Final Architectures
 
 [@raulraja](https://twitter.com/raulraja)
 [@47deg](https://twitter.com/47deg)
 [Interactive](http://github.com/47deg/typeclasses-tour)
 [Presentation](https://speakerdeck.com/raulraja/typeclasses-tour)
-
----
-
-## Acknowledgment ##
-
-- [Cats](https://github.com/typelevel/cats)
-- [Typeclassopedia](https://wiki.haskell.org/Typeclassopedia)
-- [FP](https://wiki.haskell.org/Functional_programming)
-- [Abstractions](https://en.wikipedia.org/wiki/Abstraction_principle_%28computer_programming%29)
-- [Simulacrum](https://github.com/mpilquist/simulacrum)
-
----
-
-## Overview ##
-
-Typeclasses & Data Structures
 
 ---
 
@@ -63,10 +47,9 @@ or returns a function as return type:
 
 ```tut:silent
 def transform[B](list : List[Int])(transformation : Int => B) =
-	list map transformation
+  list map transformation
 
 transform(List(1, 2, 4))(x => x * 10)
-
 ```
 
 ---
@@ -125,9 +108,9 @@ Recursion is favored over iteration
 
 ```tut:silent
 def reduceIterative(list : List[Int]) : Int = {
-	var acc = 0
-	for (i <- list) acc = acc + i
-	acc
+  var acc = 0
+  for (i <- list) acc = acc + i
+  acc
 }
 ```
 
@@ -139,10 +122,10 @@ Recursion is favored over iteration
 
 ```tut:silent
 def reduceRecursive(list : List[Int], acc : Int = 0) : Int =
-	list match {
-		case Nil => acc
-		case head :: tail => reduceRecursive(tail, head + acc)
-	}
+  list match {
+    case Nil => acc
+    case head :: tail => reduceRecursive(tail, head + acc)
+  }
 ```
 
 ---
@@ -184,8 +167,8 @@ in addition it provides an `empty` value.
 import simulacrum._
 
 @typeclass trait Monoid[A] {
-	@op("|+|") def combine(x : A, y : A) : A
-	def empty : A
+  def combine(x : A, y : A) : A
+  def empty : A
 }
 ```
 
@@ -195,8 +178,8 @@ import simulacrum._
 
 ```tut:silent
 implicit val IntAddMonoid = new Monoid[Int] {
-	def combine(x : Int, y : Int) : Int = ???
-	def empty = ???
+  def combine(x : Int, y : Int) : Int = ???
+  def empty = ???
 }
 ```
 
@@ -206,8 +189,8 @@ implicit val IntAddMonoid = new Monoid[Int] {
 
 ```tut:silent
 implicit val IntAddMonoid = new Monoid[Int] {
-	def combine(x : Int, y : Int) : Int = x + y
-	def empty = 0
+  def combine(x : Int, y : Int) : Int = x + y
+  def empty = 0
 }
 ```
 
@@ -217,8 +200,8 @@ implicit val IntAddMonoid = new Monoid[Int] {
 
 ```tut:silent
 implicit val StringConcatMonoid = new Monoid[String] {
-	def combine(x : String, y : String) : String = x + y
-	def empty = ""
+  def combine(x : String, y : String) : String = x + y
+  def empty = ""
 }
 ```
 
@@ -228,8 +211,8 @@ implicit val StringConcatMonoid = new Monoid[String] {
 
 ```tut:silent
 implicit def ListConcatMonoid[A] = new Monoid[List[A]] {
-	def combine(x : List[A], y : List[A]) : List[A] = x ++ y
-	def empty = Nil
+  def combine(x : List[A], y : List[A]) : List[A] = x ++ y
+  def empty = Nil
 }
 ```
 
@@ -241,10 +224,8 @@ We can code to abstractions instead of coding to concrete
 types.
 
 ```tut:silent
-import Monoid.ops._
-
 def uberCombine[A : Monoid](x : A, y : A) : A =
-	x |+| y
+  Monoid[A].combine(x, y)
 
 uberCombine(10, 10)
 ```
@@ -265,7 +246,7 @@ to transform its content given a function
 
 ```tut:silent
 @typeclass trait Functor[F[_]] {
-	def map[A, B](fa : F[A])(f : A => B) : F[B]
+  def map[A, B](fa : F[A])(f : A => B) : F[B]
 }
 ```
 
@@ -278,7 +259,7 @@ Functors.
 
 ```tut:silent
 implicit def ListFunctor = new Functor[List] {
-	def map[A, B](fa : List[A])(f : A => B) = fa map f
+  def map[A, B](fa : List[A])(f : A => B) = fa map f
 }
 ```
 
@@ -291,7 +272,7 @@ Functors.
 
 ```tut:silent
 implicit def OptionFunctor = new Functor[Option] {
-	def map[A, B](fa : Option[A])(f : A => B) = fa map f
+  def map[A, B](fa : Option[A])(f : A => B) = fa map f
 }
 ```
 
@@ -308,7 +289,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 implicit def FutureFunctor = new Functor[Future] {
-	def map[A, B](fa : Future[A])(f : A => B) = fa map f
+  def map[A, B](fa : Future[A])(f : A => B) = fa map f
 }
 ```
 
@@ -321,7 +302,7 @@ types.
 
 ```tut:silent
 def uberMap[F[_] : Functor, A, B](fa : F[A])(f : A => B) : F[B] =
-	Functor[F].map(fa)(f)
+  Functor[F].map(fa)(f)
 
 uberMap(List(1, 2, 3))(x => x * 2)
 ```
@@ -339,6 +320,33 @@ uberMap(List(1, 2, 3))(x => x * 2)
 
 Can we combine multiple
 abstractions & behaviors?
+
+---
+
+# What are our application layers?
+
+```
+├── algebras
+│   ├── datasource
+│   │   └── NlpDataSource.scala
+│   ├── services
+│   │   ├── Config.scala
+│   │   └── TagService.scala
+│   ├── ui
+│   │   └── Presentation.scala
+│   └── usecases
+│       └── FetchTagsUseCase.scala
+├── app
+│   └── main.scala
+└── runtime
+    ├── datasource
+    │   └── TextRazorNlpDataSource.scala
+    ├── runtime.scala
+    ├── services
+    │   └── SystemEnvConfig.scala
+    └── ui
+        └── ConsolePresentation.scala
+```
 
 ---
 
@@ -425,13 +433,14 @@ Presentation
 
 ```tut:silent
 import cats._
+import cats.Functor
 import cats.implicits._
 
 class ConsolePresentation[F[_]: Functor: FetchTagsUseCase] extends Presentation[F] {
-    def onUserRequestedTags(text: String): F[Unit] =
-      FetchTagsUseCase[F].fetchTagsInText(text).map { paragraph =>
-        println(paragraph.tags.mkString(", "))
-      }
+  def onUserRequestedTags(text: String): F[Unit] =
+    FetchTagsUseCase[F].fetchTagsInText(text).map { paragraph =>
+      println(paragraph.tags.mkString(", "))
+    }
 }
 ```
 
@@ -443,10 +452,10 @@ Use case
 
 ```tut:silent
 class DefaultFetchTagsUseCase[F[_]: Functor: TagService] extends FetchTagsUseCase[F] {
-    def fetchTagsInText(text: String): F[TaggedParagraph] =
-      TagService[F].tag(AnalysisRequest(text)).map { tags =>
-        TaggedParagraph(text, tags)
-      }
+  def fetchTagsInText(text: String): F[TaggedParagraph] =
+    TagService[F].tag(AnalysisRequest(text)).map { tags =>
+      TaggedParagraph(text, tags)
+    }
 }
 ```
 
@@ -459,8 +468,8 @@ Tag Service
 ```tut:silent
 class DefaultTagService[F[_]: Functor: NlpDataSource] extends TagService[F] {
   def tag(request: AnalysisRequest): F[List[Tag]] =
-    NlpDataSource[F].analyze(request.text).map { response =>
-      (response.categories, response.entities, response.topics).mapN { case (category, entity, topic) =>
+    NlpDataSource[F].analyze(request.text).map { r =>
+      (r.categories, r.entities, r.topics).mapN { case (category, entity, topic) =>
         List(Tag(category.value), Tag(entity.value), Tag(topic.value))
       }.flatten.distinct
     }
@@ -477,8 +486,10 @@ Config
 class SystemEnvConfig[F[_]](implicit AE: ApplicativeError[F, Throwable]) extends Config[F] {
   val key = System.getenv("NLP_API_KEY")
   def nlpApiKey: F[NlpApiKey] =
-    if (key == null || key == "") AE.raiseError(new IllegalStateException("Missing nlp api key"))
-    else AE.pure(NlpApiKey(key))
+    if (key == null || key == "")
+      AE.raiseError(new IllegalStateException("Missing nlp api key"))
+    else
+      AE.pure(NlpApiKey(key))
 }
 ```
 
@@ -494,28 +505,39 @@ import scala.concurrent._
 import java.util.Arrays
 import com.textrazor.TextRazor
 
-class TextRazorNlpDataSource[F[_]: Config](implicit errorHandler: MonadError[F, Throwable]) extends NlpDataSource[F] {
+object TextRazorClient {
+  def client(apiKey: NlpApiKey) : TextRazor = {
+    val c = new TextRazor(apiKey.value)
+    c.addExtractor("entities")
+    c.addExtractor("topics")
+    c.setClassifiers(Arrays.asList("textrazor_newscodes"))
+    c
+  }
+}
+```
 
-    private def client(apiKey: NlpApiKey) : TextRazor = {
-       val client = new TextRazor(apiKey.value)
-       client.addExtractor("entities")
-       client.addExtractor("topics")
-       client.setClassifiers(Arrays.asList("textrazor_newscodes"))
-       client
-    }
+---
 
-    def analyze(text: String): F[AnalysisResponse] =
-      for {
-        apiKey <- Config[F].nlpApiKey
-        response <- errorHandler.catchNonFatal {
-           val txtRazorRes = blocking { client(apiKey).analyze(text).getResponse }
-           AnalysisResponse(
-             txtRazorRes.getCategories.asScala.toList.map { c => Category(c.getLabel) },
-             txtRazorRes.getEntities.asScala.toList.map { e => Entity(e.getEntityId) },
-             txtRazorRes.getTopics.asScala.toList.map { t => Topic(t.getLabel) }
-           )
-        }
-      } yield response
+# Implementation?
+
+Data Source
+
+```tut:silent
+class TextRazorNlpDataSource[F[_]: Config](implicit ME: MonadError[F, Throwable]) extends NlpDataSource[F] {
+   def analyze(text: String): F[AnalysisResponse] =
+    for {
+      apiKey <- Config[F].nlpApiKey
+      response <- ME.catchNonFatal {
+         val r = blocking {
+           TextRazorClient.client(apiKey).analyze(text).getResponse
+         }
+         AnalysisResponse(
+           r.getCategories.asScala.toList.map { c => Category(c.getLabel) },
+           r.getEntities.asScala.toList.map { e => Entity(e.getEntityId) },
+           r.getTopics.asScala.toList.map { t => Topic(t.getLabel) }
+         )
+      }
+    } yield response
 }
 ```
 
@@ -549,6 +571,7 @@ Application
 
 ```tut:silent
 import runtime._
+import scala.util.Try
 
 val text =
     """|
@@ -558,9 +581,27 @@ val text =
        | ― Antoine de Saint-Exupéry, The Little Prince
        """.stripMargin
 
-import scala.util.Try
 Presentation[Try].onUserRequestedTags(text)
 ```
+
+---
+
+## Pros ##
+
+- Pure Applications and Libraries
+- Testing flexibility
+- Controlled Effects at the edge
+- Separation of concerns on steroids
+- A unified model to create components and compose them
+- A unified API to rule all data types when using just type classes.
+- Restricted to thoroughly tested lawful declarations with a base on mathematics
+
+---
+
+## Cons ##
+
+- Requires understanding type classes and higher kinds
+- Potential peer and status quo push-back
 
 ---
 
@@ -570,5 +611,3 @@ Presentation[Try].onUserRequestedTags(text)
 @47deg
 http://github.com/47deg/typeclasses-tour
 https://speakerdeck.com/raulraja/typeclasses-tour
-
----
