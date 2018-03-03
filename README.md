@@ -7,3 +7,5 @@ A brief introduction to the core Functional Programming traits and the power of 
 2. [PDF](presentation.pdf) Download
 3. [MD](presentation.md)
 4. [SpeakerDeck](https://speakerdeck.com/raulraja/typeclasses-in-fp-architecture)
+
+[![SpeakerDeck](cover.png)](https://speakerdeck.com/raulraja/typeclasses-in-fp-architecture)
