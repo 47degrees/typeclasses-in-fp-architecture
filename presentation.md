@@ -3,9 +3,15 @@ build-lists: true
 slidenumbers: true
 footer: @raulraja @47deg
 
-# A Tour of Functional Typeclasses #
+# [fit] Type classes & FP Λrchitecture
 
-An introduction to FP & typeclasses ilustrating
+![filtered](romanesco.jpg)
+
+---
+
+# Typeclasses in FP Architecture #
+
+An introduction to FP & type classes illustrating
 the power of coding to abstractions and Tagless Final Architectures
 
 [@raulraja](https://twitter.com/raulraja)
@@ -609,5 +615,5 @@ Presentation[Try].onUserRequestedTags(text)
 
 @raulraja
 @47deg
-http://github.com/47deg/typeclasses-tour
-https://speakerdeck.com/raulraja/typeclasses-tour
+http://github.com/47deg/typeclasses-in-fp-architecture
+https://speakerdeck.com/raulraja/typeclasses-in-fp-architecture

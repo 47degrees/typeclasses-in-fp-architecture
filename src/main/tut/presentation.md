@@ -3,9 +3,15 @@ build-lists: true
 slidenumbers: true
 footer: @raulraja @47deg
 
+# [fit] Type classes & FP Λrchitecture
+
+![filtered](romanesco.jpg)
+
+---
+
 # Typeclasses in FP Architecture #
 
-An introduction to FP & type classes ilustrating
+An introduction to FP & type classes illustrating
 the power of coding to abstractions and Tagless Final Architectures
 
 [@raulraja](https://twitter.com/raulraja)
